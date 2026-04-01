@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hypoglycemia Detection</title>
+    <style>
+        /* Basic page styling */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 80px auto;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 40px;
+        }
+
+        /* Upload section */
+        .upload-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        input[type="file"] {
+            margin: 10px;
+            padding: 10px;
+        }
+
+        button {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #3d5166;
+        }
+
+        /* Result section - hidden at first */
+        .result-section {
+            display: none;
+            margin-top: 30px;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .result-label {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .confidence {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        /* Color coding for confidence */
+        .high-confidence   { color: green; }
+        .medium-confidence { color: orange; }
+        .low-confidence    { color: red; }
+    </style>
+</head>
+<body>
+
+    <h1>Hypoglycemia Detection from ECG Signals</h1>
+
+    <div class="upload-section">
+        <p>Insert your ECG CSV file here:</p>
+        <input type="file" id="ecgFile" accept=".csv" />
+        <button onclick="predict()">Predict</button>
+    </div>
+
+    <div class="result-section" id="resultSection">
+        <p>Result:</p>
+        <div class="result-label" id="resultLabel"></div>
+        <div class="confidence" id="confidenceLabel"></div>
+    </div>
+
+    <script>
+        async function predict() {
+
+            // Get the file the user uploaded
+            const file = document.getElementById('ecgFile').files[0];
+
+            // Make sure the user actually selected a file
+            if (!file) {
+                alert('Please select a CSV file first!');
+                return;
+            }
+
+            // Prepare the file to send to Flask
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Send the file to our /predict route
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+
+            // Get the result back from Flask
+            const data = await response.json();
+
+            // Convert probability to percentage
+            const probability = (data.probability * 100).toFixed(1);
+
+            // Show the result section
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('resultLabel').textContent = data.prediction;
+
+            // Color code based on confidence level
+            const confidenceEl = document.getElementById('confidenceLabel');
+            confidenceEl.textContent = `Confidence: ${probability}%`;
+
+            if (probability >= 70) {
+                confidenceEl.className = 'confidence high-confidence';
+            } else if (probability >= 40) {
+                confidenceEl.className = 'confidence medium-confidence';
+            } else {
+                confidenceEl.className = 'confidence low-confidence';
+            }
+        }
+    </script>
+
+</body>
+</html>
